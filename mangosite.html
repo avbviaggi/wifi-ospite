@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portale Agenzia Viaggiare Bene</title>
+    <style>
+        body { background-color: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        center { width: 100%; max-width: 320px; padding: 20px; }
+        .logo-avb { width: 110px; height: auto; margin-bottom: 25px; display: block; margin-left: auto; margin-right: auto; filter: drop-shadow(0 0 10px rgba(66, 133, 244, 0.3)); }
+        h1 { font-size: 22px; margin-bottom: 5px; font-weight: 600; }
+        .greeting-text { font-size: 20px; color: #4285F4; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .subtitle { color: #888; font-size: 14px; margin-bottom: 30px; }
+        
+        input[type="email"] { width: 100%; padding: 15px; margin-top: 20px; border-radius: 4px; border: 1px solid #333; background: #111; color: white; text-align: center; font-size: 16px; outline: none; box-sizing: border-box; }
+        .btn-submit, .btn-link { background: #4285F4; color: white; width: 100%; padding: 15px; border-radius: 4px; border: none; margin-top: 20px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.3s; box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3); text-decoration: none; display: block; box-sizing: border-box; }
+        .btn-submit:hover, .btn-link:hover { transform: scale(1.02); background: #357ae8; }
+
+        #loader-container { width: 100%; background: #222; height: 4px; border-radius: 2px; margin-top: 30px; display: none; overflow: hidden; }
+        #loader-bar { width: 0%; height: 100%; background: #4285F4; box-shadow: 0 0 10px #4285F4; transition: width 2.5s linear; }
+        #status-text { font-size: 12px; color: #4285F4; margin-top: 10px; display: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        
+        #error-msg { color: #ff4d4d; font-size: 12px; margin-top: 10px; display: none; font-weight: bold; }
+        
+        /* Pannelli Interni Nascosti */
+        #staff-box, #ospite-box { display: none; margin-top: 20px; }
+        .staff-title { color: #ffcc00; font-size: 14px; font-weight: bold; letter-spacing: 2px; margin-bottom: 5px; }
+        .ospite-title { color: #4285F4; font-size: 14px; font-weight: bold; letter-spacing: 2px; margin-bottom: 15px; }
+        .welcome-user { font-size: 18px; font-weight: bold; color: white; margin-bottom: 15px; }
+    </style>
+</head>
+<body onload="setGreeting()">
+
+<center>
+    <img src="https://i.ibb.co/5Xd8CvF4/LOGO-ROUTER.png" class="logo-avb" alt="Logo AVB">
+    <div id="greeting" class="greeting-text">BENVENUTO</div>
+    <h1>Agenzia Viaggiare Bene</h1>
+    <p class="subtitle">Viaggiare Insieme, Viaggiare Bene.</p>
+
+    <!-- Box Iniziale di Login -->
+    <div id="login-box">
+        <input type="email" id="emailInput" placeholder="Inserisci la tua email" required>
+        <div id="error-msg"></div>
+        <button type="button" class="btn-submit" onclick="validateAndConnect()">CONNETTITI ORA</button>
+    </div>
+
+    <!-- Contenitore Animazione Caricamento -->
+    <div id="loader-container"><div id="loader-bar"></div></div>
+    <p id="status-text">Verifica credenziali Mango...</p>
+
+    <!-- 1. PANNELLO SEGRETO STAFF (Oro) -->
+    <div id="staff-box">
+        <div class="staff-title">🔒 AREA STAFF AUTORIZZATA</div>
+        <div id="staff-welcome" class="welcome-user">Ciao, Utente!</div>
+        <p class="subtitle" style="margin-bottom: 15px;">Accesso eseguito come Amministratore.</p>
+        <button type="button" class="btn-submit" style="background:#ffcc00; color:black;" onclick="mangoRedirect('staff')">APRI PANNELLO DI CONTROLLO</button>
+    </div>
+
+    <!-- 2. PANNELLO CLIENTE OSPITE (Azzurro) -->
+    <div id="ospite-box">
+        <div class="ospite-title">👤 AREA OSPITE ABILITATA</div>
+        <p class="subtitle" style="margin-bottom: 15px;">Accesso eseguito come ospite.</p>
+        <button type="button" class="btn-submit" onclick="mangoRedirect('ospite')">ENTRA NEL SITO DEI VIAGGI</button>
+    </div>
+</center>
+
+<script>
+    // Recupera i parametri di sblocco inviati dal router Mango
+    const urlParams = new URLSearchParams(window.location.search);
+    const mangoClientIp = urlParams.get('client_ip');
+    const mangoClientMac = urlParams.get('client_mac');
+    const mangoGateway = urlParams.get('gateway') || "http://192.168.8.1"; // IP standard del Mango
+
+    function setGreeting() {
+        const hour = new Date().getHours();
+        let greeting = "BENVENUTO";
+
+        if (hour >= 6 && hour < 13) { greeting = "☀️ BUONGIORNO"; } 
+        else if (hour >= 13 && hour < 17) { greeting = "🌤️ BUON POMERIGGIO"; } 
+        else if (hour >= 17 && hour < 23) { greeting = "🌙 BUONASERA"; } 
+        else { greeting = "🌌 BUONANOTTE"; }
+
+        document.getElementById('greeting').innerText = greeting;
+    }
+
+    function validateAndConnect() {
+        const email = document.getElementById('emailInput').value.toLowerCase().trim();
+        const errorMsg = document.getElementById('error-msg');
+        
+        const fixedStaff = [
+            "agenzia.viaggiare.bene@gmail.com",
+            "agenzia.viaggiare.bene.2021@outlook.com"
+        ];
+
+        if (!email.includes('@') || !email.includes('.')) {
+            errorMsg.innerText = "Inserisci un indirizzo email valido.";
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        const isStaff = fixedStaff.includes(email) || 
+                        email.endsWith(".avb@outlook.com") || 
+                        email.endsWith(".avb@gmail.com");
+
+        document.getElementById('login-box').style.display = 'none';
+        errorMsg.style.display = 'none';
+        document.getElementById('loader-container').style.display = 'block';
+        document.getElementById('status-text').style.display = 'block';
+        
+        setTimeout(() => { document.getElementById('loader-bar').style.width = '100%'; }, 100);
+
+        setTimeout(() => {
+            document.getElementById('loader-container').style.display = 'none';
+            document.getElementById('status-text').style.display = 'none';
+
+            if (isStaff) {
+                let rawName = email.split('@')[0]; 
+                let firstName = rawName.split('.')[0]; 
+                let cleanName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+                
+                document.getElementById('staff-welcome').innerText = "Ciao, " + cleanName + "!";
+                document.getElementById('staff-box').style.display = 'block';
+            } else {
+                document.getElementById('ospite-box').style.display = 'block';
+            }
+        }, 3000);
+    }
+
+    // Funzione cruciale per comunicare con OpenWrt del Mango e sbloccare internet
+    function mangoRedirect(type) {
+        // Genera il comando di autenticazione per il Captive Portal del Mango
+        const authUrl = `${mangoGateway}/cgi-bin/luci/api/captive?client_ip=${mangoClientIp}&client_mac=${mangoClientMac}&auth=1`;
+        
+        // Invia il segnale di sblocco in background al router
+        fetch(authUrl, { mode: 'no-cors' }).then(() => {
+            // Dopo aver sbloccato internet, esegue il reindirizzamento corretto
+            if (type === 'staff') {
+                window.location.href = "https://agenzia-viaggiare-bene.my.canva.site/area-staff";
+            } else {
+                window.location.href = "https://agenzia-viaggiare-bene.my.canva.site/avbviaggi";
+            }
+        }).catch(() => {
+            // Alternativa se il fetch viene bloccato dalle policy del browser
+            if (type === 'staff') { window.location.href = "https://agenzia-viaggiare-bene.my.canva.site/area-staff"; } 
+            else { window.location.href = "https://agenzia-viaggiare-bene.my.canva.site/avbviaggi"; }
+        });
+    }
+</script>
+
+</body>
+</html>
